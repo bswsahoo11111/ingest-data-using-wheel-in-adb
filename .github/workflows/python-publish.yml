@@ -1,48 +1,37 @@
-name: Build Wheel - Deployment
+name: Build Wheel
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+      # Step 1: Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-    - name: Install build tools
-      run: python -m pip install --upgrade pip build
+      # Step 3: Install build tools
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
 
-    - name: Build wheel
-      run: python -m build
+      # Step 4: Build wheel
+      - name: Build wheel
+        run: python -m build --wheel
 
-    # Store in GitHub repo (env/ folder)
-    - name: Store in env/ directory
-      run: |
-        mkdir -p env
-        cp dist/*.whl env/
-        ls -la env/
-
-    - name: Commit to env/
-      run: |
-        git config --global user.name "bswsahoo11111"
-        git config --global user.email "bswsahoo11111@gmail.com"
-        git add env/*.whl
-        git commit -m "chore: update wheel in env/ [skip ci]" || echo "No changes"
-        git push
-
-    # Store as GitHub Artifact (volume/CD access)
-    - name: Upload wheel artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: python-wheels-env-volume
-        path: dist/*.whl
-        retention-days: 30
+      # Step 5: Move wheel file to another directory
+      - name: Move wheel file
+        run: |
+          mkdir -p dist_wheels
+          mv dist/*.whl dist_wheels/
