@@ -1,4 +1,4 @@
-name: Build Wheel - env/ + Artifacts
+name: Build Wheel - Deployment
 
 on:
   push:
