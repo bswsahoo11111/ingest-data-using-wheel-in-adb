@@ -20,9 +20,11 @@ jobs:
       run: |
         python -m pip install --upgrade pip build
         
-    - name: Create dev/new directory
+    - name: Create env/ directory and copy wheel
       run: |
-        mkdir -p dev/new
+        mkdir -p env
+        cp dist/*.whl env/
+        ls -la env/
 
     - name: Build wheel
       run: python -m build
