@@ -1,38 +1,48 @@
-
-name: Build Python Wheel
+name: Build Wheel - env/ + Artifacts
 
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'  # Adjust to your Python version
+        python-version: '3.11'
 
     - name: Install build tools
-      run: |
-        python -m pip install --upgrade pip build
+      run: python -m pip install --upgrade pip build
 
-    
     - name: Build wheel
       run: python -m build
-        
-    - name: Create env/ directory and copy wheel
+
+    # Store in GitHub repo (env/ folder)
+    - name: Store in env/ directory
       run: |
         mkdir -p env
         cp dist/*.whl env/
         ls -la env/
 
+    - name: Commit to env/
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add env/*.whl
+        git commit -m "chore: update wheel in env/ [skip ci]" || echo "No changes"
+        git push
 
+    # Store as GitHub Artifact (volume/CD access)
     - name: Upload wheel artifact
       uses: actions/upload-artifact@v4
       with:
-        name: python-wheel
-        path: dev/new/*.whl
+        name: python-wheels-env-volume
+        path: dist/*.whl
+        retention-days: 30
