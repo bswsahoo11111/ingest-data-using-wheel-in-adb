@@ -19,6 +19,10 @@ jobs:
     - name: Install build tools
       run: |
         python -m pip install --upgrade pip build
+        
+    - name: Create dev/new directory
+      run: |
+        mkdir -p dev/new
 
     - name: Build wheel
       run: python -m build
@@ -27,4 +31,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: python-wheel
-        path: dev/dist/*.whl
+        path: dev/new/*.whl
