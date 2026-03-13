@@ -33,5 +33,5 @@ jobs:
       # Step 5: Move wheel file to another directory
       - name: Move wheel file
         run: |
-          mkdir -p dist_wheels
-          mv dist/*.whl dist_wheels/
+          mkdir -p bswsahoo11111/ingest-data-using-wheel-in-adb/dist_wheels
+          mv dist/*.whl bswsahoo11111/ingest-data-using-wheel-in-adb/dist_wheels/
