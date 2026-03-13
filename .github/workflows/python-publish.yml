@@ -1,4 +1,4 @@
-name: Build Wheel
+name: Build and Push Wheel
 
 on:
   push:
@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repo
-      - name: Checkout code
+      # Step 1: Checkout source repo
+      - name: Checkout source repo
         uses: actions/checkout@v3
 
       # Step 2: Set up Python
@@ -30,8 +30,26 @@ jobs:
       - name: Build wheel
         run: python -m build --wheel
 
-      # Step 5: Move wheel file to another directory
+      # Step 5: Checkout target repo
+      - name: Checkout target repo
+        uses: actions/checkout@v3
+        with:
+          repository: bswsahoo11111/ingest-data-using-wheel-in-adb
+          token: ${{ secrets.GITHUB_TOKEN }} 
+          path: target-repo
+
+      # Step 6: Move wheel file into target repo directory
       - name: Move wheel file
         run: |
-          mkdir -p bswsahoo11111/ingest-data-using-wheel-in-adb/dist_wheels
-          mv dist/*.whl bswsahoo11111/ingest-data-using-wheel-in-adb/dist_wheels/
+          mkdir -p target-repo/dist-wheel
+          cp dist/*.whl target-repo/dist-wheel/
+
+      # Step 7: Commit and push to target repo
+      - name: Commit and push
+        run: |
+          cd target-repo
+          git config user.name "bswsahoo11111"
+          git config user.email "bswsahoo11111@gmail.com"
+          git add dist-wheel/
+          git commit -m "Add new wheel file"
+          git push
