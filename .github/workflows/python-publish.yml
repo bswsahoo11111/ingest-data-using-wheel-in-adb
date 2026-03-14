@@ -62,11 +62,9 @@ jobs:
       - name: Configure Databricks CLI
         run: |
           mkdir -p ~/.databricks
-          cat <<EOF > ~/.databricks/config
-          [DEFAULT]
-          host = https://dbc-376ffe1e-98d8.cloud.databricks.com/
-          token = ${{ secrets.DATABRICKS_TOKEN }}
-          EOF
+          echo "[DEFAULT]" > ~/.databricks/config
+          echo "host = https://<your-databricks-workspace-url>" >> ~/.databricks/config
+          echo "token = ${{ secrets.DATABRICKS_TOKEN }}" >> ~/.databricks/config
 
       # Step 10: Upload wheel to DBFS
       - name: Upload wheel to DBFS
