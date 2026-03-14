@@ -1,0 +1,32 @@
+name: Update Databricks Wheel
+
+on:
+  workflow_dispatch:
+    inputs:
+      whl_version:
+        description: "Wheel version to deploy"
+        required: true
+      job_id:
+        description: "Databricks Job ID"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          pip install databricks-sdk
+
+      - name: Update Databricks Job Wheel
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          WHL_VERSION: ${{ github.event.inputs.whl_version }}
+          JOB_ID: ${{ github.event.inputs.job_id }}
+        run: |
+          python scripts/update_job_whl.py
