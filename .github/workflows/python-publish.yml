@@ -78,7 +78,6 @@ jobs:
         DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       run: |
         WHEEL_FILE=$(ls dist/*.whl | head -n1)
-        databricks fs cp "$WHEEL_FILE" \
-          dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ \  # ✅ No dbfs:
-          --overwrite
+        databricks fs cp $WHEEL_FILE dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
+
         echo "✅ ${{ steps.version.outputs.version }} uploaded!"
