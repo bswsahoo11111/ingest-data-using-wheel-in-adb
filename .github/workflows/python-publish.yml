@@ -54,67 +54,12 @@ jobs:
           git commit -m "Add new wheel file"
           git push
 
-      # # Step 8: Install Databricks CLI
-      # - name: Install Databricks CLI
-      #   run: pip install databricks-cli
+       # Step 8: Install Databricks CLI
 
       - name: Install Databricks CLI
         run: |
           curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
         
-      # # Step 9: Commit and push to target repo
-      # - name: Upload wheel to DBFS
-      #   env:
-      #     DATABRICKS_HOST: https://dbc-376ffe1e-98d8.cloud.databricks.com
-      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-      #   run: |
-      #     WHEEL_FILE=$(ls dist/*.whl | head -n 1)
-      #     databricks fs cp $WHEEL_FILE dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
-
-      # - name: Configure Databricks CLI
-      #   env:
-      #     DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-      #   run: |
-      #     databricks auth login --host $DATABRICKS_HOST --token $DATABRICKS_TOKEN
-
-      # - name: Copy file to volume
-      #   env:
-      #     DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-      #   run: |
-      #     databricks fs cp $WHEEL_FILE \
-      #     dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
-      #     --overwrite
-
-
-    # # UPLOAD WITH NEW CLI
-    #   - name: Upload to Databricks
-    #     env:
-    #       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-    #       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-    #     run: |
-    #       pip install --upgrade "databricks-cli>=0.205"
-    #       databricks fs cp dist/*.whl /Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
-          
-    #       echo "Wheel uploaded successfully!"
-
-      # - name: Configure Databricks CLI
-      #   env:
-      #     DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-      #   run: |
-      #     databricks auth login --host $DATABRICKS_HOST --token $DATABRICKS_TOKEN
-
-      # - name: Copy file to volume
-      #   env:
-      #     DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-      #   run: |
-      #     databricks fs cp dist/*.whl \
-      #     dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
-      #     --overwrite
-            # ✅ THIS WORKS - No auth command
       - name: Upload to Databricks
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
