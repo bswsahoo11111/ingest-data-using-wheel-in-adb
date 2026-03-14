@@ -27,5 +27,5 @@ jobs:
         pip install databricks-cli
         # Use correct volume path (no dbfs: prefix for volumes)
         databricks fs cp dist/*.whl \
-          /Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
+          dbfs://Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
           --overwrite
