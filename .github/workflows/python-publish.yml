@@ -1,31 +1,63 @@
-# FIXED VERSION - Replace your entire workflow:
 name: Build and Push Wheel
+
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4  # v4 not v3
-    
-    - uses: actions/setup-python@v5  # v5 not v4
-      with:
-        python-version: '3.10'
-    
-    - run: |
-        pip install --upgrade pip build
-        python -m build --wheel
-    
-    # Upload to Databricks Volume (FIXED)
-    - name: Upload to Volume
-      env:
-        DATABRICKS_HOST: https://dbc-376ffe1e-98d8.cloud.databricks.com  # Fixed URL
-        DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}  # NEW TOKEN HERE
-      run: |
-        pip install databricks-cli
-        # Use correct volume path (no dbfs: prefix for volumes)
-        databricks fs cp dist/*.whl \
-          dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
-          --overwrite
+      # Step 1: Checkout source repo
+      - name: Checkout source repo
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # Step 3: Install build tools
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      # Step 4: Build wheel
+      - name: Build wheel
+        run: python -m build --wheel
+
+      # Step 5: Checkout target repo
+      - name: Checkout target repo
+        uses: actions/checkout@v3
+        with:
+          repository: bswsahoo11111/ingest-data-using-wheel-in-adb
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          path: target-repo
+
+      # Step 6: Move wheel file into target repo directory
+      - name: Move wheel file
+        run: |
+          mkdir -p target-repo/dist-wheel
+          cp dist/*.whl target-repo/dist-wheel/
+
+      # Step 7: Commit and push to target repo
+      - name: Commit and push
+        run: |
+          cd target-repo
+          git config user.name "bswsahoo11111"
+          git config user.email "bswsahoo11111@gmail.com"
+          git add dist-wheel/
+          git commit -m "Add new wheel file"
+          git push
+      # Step 8: Commit and push to target repo
+      - name: Upload wheel to DBFS
+        env:
+          DATABRICKS_HOST: https://dbc-376ffe1e-98d8.cloud.databricks.com/
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          WHEEL_FILE=$(ls dist/*.whl | head -n 1)
+          databricks fs cp $WHEEL_FILE dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
