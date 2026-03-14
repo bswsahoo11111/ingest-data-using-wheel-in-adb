@@ -1,70 +1,68 @@
 name: Build and Push Wheel File
-
 on:
-  workflow_dispatch: 
-#   push:
-#     branches:
-#       - main
+  workflow_dispatch:  # Manual trigger only
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Checkout source repo
-      - name: Checkout source repo
-        uses: actions/checkout@v5
+    - uses: actions/checkout@v4  # Fixed v5→v4 (stable)
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-      # Step 2: Set up Python
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+    - name: Install build tools
+      run: |
+        python -m pip install --upgrade pip build
 
-      # Step 3: Install build tools
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install build
+    - name: Build wheel
+      run: python -m build --wheel
 
-      # Step 4: Build wheel
-      - name: Build wheel
-        run: python -m build --wheel
-
-      # Step 5: Checkout target repo
-      - name: Checkout target repo
-        uses: actions/checkout@v5
-        with:
-          repository: bswsahoo11111/ingest-data-using-wheel-in-adb
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          path: target-repo
-
-      # Step 6: Move wheel file into target repo directory
-      - name: Move wheel file
-        run: |
-          mkdir -p target-repo/dist-wheel
-          cp dist/*.whl target-repo/dist-wheel/
-
-      # Step 7: Commit and push to target repo
-      - name: Commit and push
-        run: |
-          cd target-repo
-          git config user.name "bswsahoo11111"
-          git config user.email "bswsahoo11111@gmail.com"
-          git add dist-wheel/
-          git commit -m "Add new wheel file"
-          git push
-
-       # Step 8: Install Databricks CLI
-
-      - name: Install Databricks CLI
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+    # ✅ AUTO-VERSION: Get wheel filename with timestamp
+    - name: Get wheel filename
+      id: wheel
+      run: |
+        WHEEL_FILE=$(ls -t dist/*.whl | head -n1)
+        VERSION=$(echo $WHEEL_FILE | sed 's/.*-//; s/\.whl$//')
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        FULL_NAME="${VERSION}_${TIMESTAMP}.whl"
         
-      - name: Upload to Databricks
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: |
-          pip install --upgrade databricks-cli
-          databricks fs cp dist/*.whl dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
+        echo "wheel_file=$WHEEL_FILE" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "full_name=$FULL_NAME" >> $GITHUB_OUTPUT
+        echo "Wheel: $WHEEL_FILE -> $FULL_NAME"
+
+    # Push to target repo with version
+    - name: Checkout & push target repo
+      env:
+        PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      run: |
+        git clone https://$PAT@github.com/bswsahoo11111/ingest-data-using-wheel-in-adb.git target-repo
+        cd target-repo
+        
+        mkdir -p dist-wheel
+        cp ../dist/*.whl dist-wheel/
+        
+        git config user.name "bswsahoo11111"
+        git config user.email "bswsahoo11111@gmail.com"
+        git add dist-wheel/
+        git commit -m "Add wheel ${{ steps.wheel.outputs.version }} [skip ci]" || echo "No changes"
+        git push
+
+    # ✅ FIXED: Official Databricks CLI + Correct volume path
+    - name: Upload to Databricks Volume
+      env:
+        DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+        DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      run: |
+        # Install OFFICIAL Databricks CLI
+        curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+        
+        # Upload with versioned name (no dbfs: prefix!)
+        databricks fs cp dist/*.whl \
+          /Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
+          --overwrite
+        
+        echo "✅ Uploaded to /Volumes/dataeng/dataeng/dataeng_vol/wheel/"
