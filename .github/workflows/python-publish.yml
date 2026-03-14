@@ -1,4 +1,4 @@
-name: Build and Push Wheel file
+name: Build and Push Wheel
 
 on:
   push:
