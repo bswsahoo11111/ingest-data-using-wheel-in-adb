@@ -1,66 +1,90 @@
-name: Build and Push Versioned Wheel
+name: Build and Push Wheel File
+
 on:
-  workflow_dispatch:
+  workflow_dispatch: 
+#   push:
+#     branches:
+#       - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      # Step 1: Checkout source repo
+      - name: Checkout source repo
+        uses: actions/checkout@v5
 
-    - name: Install build tools
-      run: |
-        python -m pip install --upgrade pip build
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Build wheel
-      run: python -m build --wheel
-
-    # ✅ AUTO-VERSION EVERY TRIGGER
-    - name: Version wheel with timestamp
-      id: version
-      run: |
-        WHEEL_FILE=$(ls -t dist/*.whl | head -n1)
-        BASE_NAME=$(basename "$WHEEL_FILE" .whl)
-        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-        RUN_NUMBER=${{ github.run_number }}
-        NEW_NAME="${BASE_NAME}_${TIMESTAMP}_run${RUN_NUMBER}.whl"
-        
-        # Copy with new versioned name
-        cp "$WHEEL_FILE" "dist/$NEW_NAME"
-        
-        echo "original_wheel=$WHEEL_FILE" >> $GITHUB_OUTPUT
-        echo "versioned_wheel=$NEW_NAME" >> $GITHUB_OUTPUT
-        echo "run_number=${RUN_NUMBER}" >> $GITHUB_OUTPUT
-        echo "✅ Created: $NEW_NAME"
-
-    # ✅ SIMPLIFIED: Push to SAME repo (no target repo needed)
-    - name: Commit versioned wheel
-      run: |
-        mkdir -p dist-wheel
-        cp dist/*_*.whl dist-wheel/  # Only versioned wheels
-        
-        git config user.name "bswsahoo11111"
-        git config user.email "bswsahoo11111@gmail.com"
-        git add dist-wheel/
-        git commit -m "Add wheel ${{ steps.version.outputs.versioned_wheel }} [skip ci]" || echo "No changes"
-        git push
-
-    # ✅ FIXED: Correct CLI + Volume path
-    - name: Upload to Databricks
-      env:
-        DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-        DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-      run: |
-        curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
-        
-        # Upload ONLY versioned wheel
-        VERSIONED_WHEEL=$(ls dist/*_*_*.whl | head -n1)
-        databricks fs cp "$VERSIONED_WHEEL" \
-          dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/" 
-          --overwrite
+    # ✅ AUTO-INCREMENT setup.py VERSION (0.1.0 → 0.2.0)
+      - name: Increment setup.py version
+        id: version
+        run: |
+          # Read current version from setup.py
+          CURRENT_VERSION=$(grep -o 'version="[^"]*"' setup.py | sed 's/version="//;s/"$//')
+          echo "Current: $CURRENT_VERSION"
           
-        echo "✅ Uploaded: $VERSIONED_WHEEL"
+          # Split MAJOR.MINOR.PATCH and increment MINOR
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          NEW_MINOR=$((MINOR + 1))
+          NEW_VERSION="${MAJOR}.${NEW_MINOR}.0"
+          
+          # Replace version in setup.py
+          sed -i "s/version=\"[0-9]\+\.[0-9]\+\.[0-9]\+\"/version=\"$NEW_VERSION\"/" setup.py
+          
+          echo "New version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          
+        # Step 3: Install build tools
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      # Step 4: Build wheel
+      - name: Build wheel
+        run: python -m build --wheel
+
+      # Step 5: Checkout target repo
+      - name: Checkout target repo
+        uses: actions/checkout@v5
+        with:
+          repository: bswsahoo11111/ingest-data-using-wheel-in-adb
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          path: target-repo
+
+      # Step 6: Move wheel file into target repo directory
+      - name: Move wheel file
+        run: |
+          mkdir -p target-repo/dist-wheel
+          cp dist/*.whl target-repo/dist-wheel/
+
+      # Step 7: Commit and push to target repo
+      - name: Commit and push
+        run: |
+          cd target-repo
+          git config user.name "bswsahoo11111"
+          git config user.email "bswsahoo11111@gmail.com"
+          git add dist-wheel/
+          git commit -m "Add new wheel file"
+          git push
+
+       # Step 8: Install Databricks CLI
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+        
+      - name: Upload to Databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          pip install --upgrade databricks-cli
+          databricks fs cp dist/*.whl dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
