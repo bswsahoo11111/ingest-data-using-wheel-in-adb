@@ -121,4 +121,4 @@ jobs:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           pip install --upgrade databricks-cli
-          databricks fs cp dist/*.whl /Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
+          databricks fs cp dist/*.whl dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
