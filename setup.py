@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="gap_upsert_pipeline",       # package name
-    version="0.1.0",                  # version
+    version="0.5.0",                  # version
     packages=find_packages(),         # automatically find dev/, prod/, etc.
     install_requires=[
         "pyspark",                    # dependencies
