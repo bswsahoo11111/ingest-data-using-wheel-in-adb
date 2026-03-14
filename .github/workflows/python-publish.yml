@@ -54,9 +54,13 @@ jobs:
           git commit -m "Add new wheel file"
           git push
 
-      # Step 8: Install Databricks CLI
+      # # Step 8: Install Databricks CLI
+      # - name: Install Databricks CLI
+      #   run: pip install databricks-cli
+
       - name: Install Databricks CLI
-        run: pip install databricks-cli
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
         
       # # Step 9: Commit and push to target repo
       # - name: Upload wheel to DBFS
