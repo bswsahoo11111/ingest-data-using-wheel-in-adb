@@ -61,7 +61,7 @@ jobs:
       # Step 9: Commit and push to target repo
       - name: Upload wheel to DBFS
         env:
-          DATABRICKS_HOST: https://dbc-376ffe1e-98d8.cloud.databricks.com/
+          DATABRICKS_HOST: https://dbc-376ffe1e-98d8.cloud.databricks.com
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           WHEEL_FILE=$(ls dist/*.whl | head -n 1)
