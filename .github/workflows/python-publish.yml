@@ -67,18 +67,30 @@ jobs:
       #     WHEEL_FILE=$(ls dist/*.whl | head -n 1)
       #     databricks fs cp $WHEEL_FILE dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
 
-      - name: Configure Databricks CLI
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: |
-          databricks auth login --host $DATABRICKS_HOST --token $DATABRICKS_TOKEN
+      # - name: Configure Databricks CLI
+      #   env:
+      #     DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      #   run: |
+      #     databricks auth login --host $DATABRICKS_HOST --token $DATABRICKS_TOKEN
 
-      - name: Copy file to volume
+      # - name: Copy file to volume
+      #   env:
+      #     DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      #   run: |
+      #     databricks fs cp $WHEEL_FILE \
+      #     dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
+      #     --overwrite
+
+
+    # UPLOAD WITH NEW CLI
+      - name: Upload to Databricks
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          databricks fs cp $WHEEL_FILE \
-          dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
-          --overwrite
+          pip install --upgrade "databricks-cli>=0.205"
+          databricks fs cp dist/*.whl /Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
+          
+          echo "Wheel uploaded successfully!"
