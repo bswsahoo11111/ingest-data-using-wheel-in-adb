@@ -1,15 +1,14 @@
-name: Build and Push Wheel File
+name: Build and Push Versioned Wheel
 on:
-  workflow_dispatch:  # Manual trigger only
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4  # Fixed v5→v4 (stable)
+    - uses: actions/checkout@v4
     
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -20,49 +19,48 @@ jobs:
     - name: Build wheel
       run: python -m build --wheel
 
-    # ✅ AUTO-VERSION: Get wheel filename with timestamp
-    - name: Get wheel filename
-      id: wheel
+    # ✅ AUTO-VERSION EVERY TRIGGER
+    - name: Version wheel with timestamp
+      id: version
       run: |
         WHEEL_FILE=$(ls -t dist/*.whl | head -n1)
-        VERSION=$(echo $WHEEL_FILE | sed 's/.*-//; s/\.whl$//')
+        BASE_NAME=$(basename "$WHEEL_FILE" .whl)
         TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-        FULL_NAME="${VERSION}_${TIMESTAMP}.whl"
+        RUN_NUMBER=${{ github.run_number }}
+        NEW_NAME="${BASE_NAME}_${TIMESTAMP}_run${RUN_NUMBER}.whl"
         
-        echo "wheel_file=$WHEEL_FILE" >> $GITHUB_OUTPUT
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "full_name=$FULL_NAME" >> $GITHUB_OUTPUT
-        echo "Wheel: $WHEEL_FILE -> $FULL_NAME"
+        # Copy with new versioned name
+        cp "$WHEEL_FILE" "dist/$NEW_NAME"
+        
+        echo "original_wheel=$WHEEL_FILE" >> $GITHUB_OUTPUT
+        echo "versioned_wheel=$NEW_NAME" >> $GITHUB_OUTPUT
+        echo "run_number=${RUN_NUMBER}" >> $GITHUB_OUTPUT
+        echo "✅ Created: $NEW_NAME"
 
-    # Push to target repo with version
-    - name: Checkout & push target repo
-      env:
-        PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+    # ✅ SIMPLIFIED: Push to SAME repo (no target repo needed)
+    - name: Commit versioned wheel
       run: |
-        git clone https://$PAT@github.com/bswsahoo11111/ingest-data-using-wheel-in-adb.git target-repo
-        cd target-repo
-        
         mkdir -p dist-wheel
-        cp ../dist/*.whl dist-wheel/
+        cp dist/*_*.whl dist-wheel/  # Only versioned wheels
         
         git config user.name "bswsahoo11111"
         git config user.email "bswsahoo11111@gmail.com"
         git add dist-wheel/
-        git commit -m "Add wheel ${{ steps.wheel.outputs.version }} [skip ci]" || echo "No changes"
+        git commit -m "Add wheel ${{ steps.version.outputs.versioned_wheel }} [skip ci]" || echo "No changes"
         git push
 
-    # ✅ FIXED: Official Databricks CLI + Correct volume path
-    - name: Upload to Databricks Volume
+    # ✅ FIXED: Correct CLI + Volume path
+    - name: Upload to Databricks
       env:
         DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
         DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       run: |
-        # Install OFFICIAL Databricks CLI
         curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
         
-        # Upload with versioned name (no dbfs: prefix!)
-        databricks fs cp dist/*.whl \
-          dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
+        # Upload ONLY versioned wheel
+        VERSIONED_WHEEL=$(ls dist/*_*_*.whl | head -n1)
+        databricks fs cp "$VERSIONED_WHEEL" \
+          dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/" 
           --overwrite
-        
-        echo "✅ Uploaded to /Volumes/dataeng/dataeng/dataeng_vol/wheel/"
+          
+        echo "✅ Uploaded: $VERSIONED_WHEEL"
