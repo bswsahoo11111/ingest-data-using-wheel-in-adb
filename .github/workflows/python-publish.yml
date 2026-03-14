@@ -62,7 +62,7 @@ jobs:
         
         # Upload with versioned name (no dbfs: prefix!)
         databricks fs cp dist/*.whl \
-          /Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
+          dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
           --overwrite
         
         echo "✅ Uploaded to /Volumes/dataeng/dataeng/dataeng_vol/wheel/"
