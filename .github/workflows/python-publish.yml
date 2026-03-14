@@ -53,7 +53,12 @@ jobs:
           git add dist-wheel/
           git commit -m "Add new wheel file"
           git push
-      # Step 8: Commit and push to target repo
+
+      # Step 8: Install Databricks CLI
+      - name: Install Databricks CLI
+        run: pip install databricks-cli
+        
+      # Step 9: Commit and push to target repo
       - name: Upload wheel to DBFS
         env:
           DATABRICKS_HOST: https://dbc-376ffe1e-98d8.cloud.databricks.com/
