@@ -58,16 +58,11 @@ jobs:
       - name: Install Databricks CLI
         run: pip install databricks-cli
 
-      ## Step 9: Configure Databricks CLI
-      - name: Configure Databricks CLI
-        run: |
-          mkdir -p ~/.databricks
-          echo "[DEFAULT]" > ~/.databricks/config
-          echo "host = https://<your-databricks-workspace-url>" >> ~/.databricks/config
-          echo "token = ${{ secrets.DATABRICKS_TOKEN }}" >> ~/.databricks/config
-
-      # Step 10: Upload wheel to DBFS
+      # Step 9: Upload wheel to DBFS using env vars
       - name: Upload wheel to DBFS
+        env:
+          DATABRICKS_HOST: https://dbc-376ffe1e-98d8.cloud.databricks.com
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           WHEEL_FILE=$(ls dist/*.whl | head -n 1)
           databricks fs cp $WHEEL_FILE dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
