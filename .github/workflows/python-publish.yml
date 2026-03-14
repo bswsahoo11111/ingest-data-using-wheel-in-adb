@@ -58,11 +58,27 @@ jobs:
       - name: Install Databricks CLI
         run: pip install databricks-cli
         
-      # Step 9: Commit and push to target repo
-      - name: Upload wheel to DBFS
+      # # Step 9: Commit and push to target repo
+      # - name: Upload wheel to DBFS
+      #   env:
+      #     DATABRICKS_HOST: https://dbc-376ffe1e-98d8.cloud.databricks.com
+      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      #   run: |
+      #     WHEEL_FILE=$(ls dist/*.whl | head -n 1)
+      #     databricks fs cp $WHEEL_FILE dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
+
+      - name: Configure Databricks CLI
         env:
-          DATABRICKS_HOST: https://dbc-376ffe1e-98d8.cloud.databricks.com
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          WHEEL_FILE=$(ls dist/*.whl | head -n 1)
-          databricks fs cp $WHEEL_FILE dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ --overwrite
+          databricks auth login --host $DATABRICKS_HOST --token $DATABRICKS_TOKEN
+
+      - name: Copy file to volume
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks fs cp $WHEEL_FILE \
+          dbfs:/Volumes/dataeng/dataeng/dataeng_vol/wheel/ \
+          --overwrite
